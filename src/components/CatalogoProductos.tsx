@@ -152,6 +152,7 @@ export function CatalogoProductos({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {productos.map((producto) => {
           const sinStock = producto.stock_disponible <= 0;
+          const esStockCritico = producto.stock_disponible > 0 && producto.stock_disponible <= 3;
 
           return (
             <div
@@ -159,14 +160,23 @@ export function CatalogoProductos({
               className={`bg-white rounded-2xl p-6 border transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md ${
                 sinStock
                   ? 'border-slate-200 opacity-75'
+                  : esStockCritico
+                  ? 'border-amber-300/80 hover:border-amber-400/90 shadow-amber-500/5'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
               <div>
-                {/* Header: Badge de stock y precio */}
+                {/* Header: Badge de stock, badge crítico y precio */}
                 <div className="flex items-center justify-between gap-2 mb-4">
-                  {getStockBadge(producto.stock_disponible)}
-                  <span className="text-xl font-black text-slate-900 tracking-tight">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {getStockBadge(producto.stock_disponible)}
+                    {esStockCritico && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-50 to-rose-50 text-rose-700 border border-rose-300/90 shadow-xs animate-pulse">
+                        <span>⚡ ¡Stock Crítico!</span>
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xl font-black text-slate-900 tracking-tight shrink-0">
                     {formatPrecio(producto.precio)}
                   </span>
                 </div>
