@@ -203,12 +203,13 @@ export function PanelQA({
     // 1. Mapeo del resultado de cada Promise.all
     const resultados = await Promise.all(
       Array.from({ length: totalPeticiones }).map(async () => {
-        const { data, error } = await supabase.rpc('procesar_compra_concurrente', {
+        const respuesta = await supabase.rpc('procesar_compra_concurrente', {
           p_producto_id: Number(productoId),
           p_cantidad: Number(cantidadPorPeticion),
         });
-        if (error) console.error('Error RPC:', error);
-        return data;
+        console.log('Respuesta RPC:', respuesta);
+        if (respuesta.error) console.error('Error RPC:', respuesta.error);
+        return respuesta.data;
       })
     );
 
