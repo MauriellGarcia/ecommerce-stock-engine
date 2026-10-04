@@ -17,7 +17,6 @@ import { useCart } from '../../context/CartContext';
 import {
   eliminarProductoDelCarrito,
   actualizarCantidadEnCarrito,
-  vaciarCarrito,
   type CartItem,
 } from '../../services/cartService';
 import { supabase } from '../../lib/supabaseClient';

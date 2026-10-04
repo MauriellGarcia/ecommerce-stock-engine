@@ -7,6 +7,7 @@ export interface Producto {
   precio: number;
   stock_disponible: number;
   creado_en: string;
+  imagen_url: string;
 }
 
 export interface Orden {
