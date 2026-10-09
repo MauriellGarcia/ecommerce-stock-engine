@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabaseClient';
-import type { Producto } from '../types/database.types';
+import { supabase } from '../../../lib/supabaseClient';
+import type { Producto } from '../../../types/database.types';
 
 export interface CartItem {
   id: number;

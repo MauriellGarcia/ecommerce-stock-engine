@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ShoppingCart, Check, Loader2, AlertCircle, X, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
-import { obtenerOCrearCarrito, agregarProductoAlCarrito } from '../services/cartService';
-import { supabase } from '../lib/supabaseClient';
-import type { Producto, RespuestaProcesarCompra } from '../types/database.types';
+import { useAuth } from '../../auth';
+import { useCart, obtenerOCrearCarrito, agregarProductoAlCarrito } from '../../cart';
+import { supabase } from '../../../lib/supabaseClient';
+import type { Producto, RespuestaProcesarCompra } from '../../../types/database.types';
 
 interface CatalogoProductosProps {
   productos: Producto[];

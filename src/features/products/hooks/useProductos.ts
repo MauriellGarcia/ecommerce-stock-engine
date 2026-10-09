@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import type { Producto } from '../types/database.types';
+import { supabase } from '../../../lib/supabaseClient';
+import type { Producto } from '../../../types/database.types';
 
 export function useProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);

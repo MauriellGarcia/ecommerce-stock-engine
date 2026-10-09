@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../../auth';
 import {
   obtenerOCrearCarrito,
   obtenerDetalleCarrito,

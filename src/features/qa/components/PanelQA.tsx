@@ -11,8 +11,8 @@ import {
   Clock,
   Radio,
 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
-import type { Orden, Producto, RespuestaProcesarCompra } from '../types/database.types';
+import { supabase } from '../../../lib/supabaseClient';
+import type { Orden, Producto, RespuestaProcesarCompra } from '../../../types/database.types';
 
 interface PanelQAProps {
   productos?: Producto[];

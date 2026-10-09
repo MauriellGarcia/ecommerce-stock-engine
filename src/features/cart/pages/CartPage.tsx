@@ -13,13 +13,13 @@ import {
   CheckCircle2,
   ShoppingBag,
 } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../context/CartContext';
 import {
   eliminarProductoDelCarrito,
   actualizarCantidadEnCarrito,
   type CartItem,
-} from '../../services/cartService';
-import { supabase } from '../../lib/supabaseClient';
+} from '../services/cartService';
+import { supabase } from '../../../lib/supabaseClient';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -215,51 +215,49 @@ export default function CartPage() {
     [refrescarCarrito]
   );
 
-
-// ── Finalizar compra ────────────────────────────────────────────────────────
   // ── Finalizar compra con RPC Supabase ─────────────────────────────────────────
-const handleFinalizarCompra = async () => {
-  if (finalizando || items.length === 0) return;
+  const handleFinalizarCompra = async () => {
+    if (finalizando || items.length === 0) return;
 
-  const carritoIdItem = items[0]?.carrito_id;
-  if (!carritoIdItem) {
-    setError('No se pudo identificar el carrito activo.');
-    return;
-  }
-
-  setFinalizando(true);
-  setError(null);
-
-  try {
-    // Obtener la sesión activa del usuario desde Supabase
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setError('Debes iniciar sesión para completar la compra.');
+    const carritoIdItem = items[0]?.carrito_id;
+    if (!carritoIdItem) {
+      setError('No se pudo identificar el carrito activo.');
       return;
     }
 
-    // Invocar el procedimiento almacenado transaccional en PostgreSQL
-    const { data, error: rpcError } = await supabase.rpc('procesar_compra_carrito', {
-      p_carrito_id: carritoIdItem,
-      p_usuario_id: session.user.id,
-    });
+    setFinalizando(true);
+    setError(null);
 
-    if (rpcError) throw rpcError;
+    try {
+      // Obtener la sesión activa del usuario desde Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Debes iniciar sesión para completar la compra.');
+        return;
+      }
 
-    if (data && data.exito) {
-      // Refrescar estado global del carrito (pasa a 0)
-      await refrescarCarrito();
-      setMensajeExito(true);
-    } else {
-      setError(data?.mensaje || 'No se pudo procesar la compra.');
+      // Invocar el procedimiento almacenado transaccional en PostgreSQL
+      const { data, error: rpcError } = await supabase.rpc('procesar_compra_carrito', {
+        p_carrito_id: carritoIdItem,
+        p_usuario_id: session.user.id,
+      });
+
+      if (rpcError) throw rpcError;
+
+      if (data && data.exito) {
+        // Refrescar estado global del carrito (pasa a 0)
+        await refrescarCarrito();
+        setMensajeExito(true);
+      } else {
+        setError(data?.mensaje || 'No se pudo procesar la compra.');
+      }
+    } catch (err) {
+      console.error('[CartPage] Error al finalizar compra:', err);
+      setError('Ocurrió un error al procesar tu compra. Intenta nuevamente.');
+    } finally {
+      setFinalizando(false);
     }
-  } catch (err) {
-    console.error('[CartPage] Error al finalizar compra:', err);
-    setError('Ocurrió un error al procesar tu compra. Intenta nuevamente.');
-  } finally {
-    setFinalizando(false);
-  }
-};
+  };
 
   // ── Estado: cargando ────────────────────────────────────────────────────────
   if (cargandoCarrito) {
@@ -343,8 +341,8 @@ const handleFinalizarCompra = async () => {
         <section className="flex-1 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-base font-semibold text-slate-300">
-           {totalUnidades} {totalUnidades === 1 ? 'artículo' : 'artículos'} en tu carrito
-           </h2>
+              {totalUnidades} {totalUnidades === 1 ? 'artículo' : 'artículos'} en tu carrito
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/')}
