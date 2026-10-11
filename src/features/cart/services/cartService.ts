@@ -11,6 +11,10 @@ export interface CartItem {
 
 // ── 1. Obtener o Crear Carrito ───────────────────────────────────────────────
 export const obtenerOCrearCarrito = async (usuarioId: string): Promise<string> => {
+  if (!usuarioId) {
+    throw new Error('El usuarioId es obligatorio para obtener o crear el carrito.');
+  }
+
   const { data: carritoExistente, error: errorConsulta } = await supabase
     .from('carritos')
     .select('id')
@@ -19,10 +23,10 @@ export const obtenerOCrearCarrito = async (usuarioId: string): Promise<string> =
 
   if (errorConsulta) {
     console.error('[cartService] Error al consultar carrito:', errorConsulta);
-    throw errorConsulta;
+    throw new Error(`Error al consultar carrito existente: ${errorConsulta.message}`);
   }
 
-  if (carritoExistente) {
+  if (carritoExistente?.id) {
     return carritoExistente.id;
   }
 
@@ -33,8 +37,9 @@ export const obtenerOCrearCarrito = async (usuarioId: string): Promise<string> =
     .single();
 
   if (errorCreacion || !nuevoCarrito) {
-    console.error('[cartService] Error al crear carrito:', errorCreacion);
-    throw errorCreacion;
+    const mensaje = errorCreacion ? errorCreacion.message : 'No se pudo crear el carrito';
+    console.error('[cartService] Error al crear carrito:', mensaje);
+    throw new Error(`Error al crear carrito: ${mensaje}`);
   }
 
   return nuevoCarrito.id;
@@ -67,10 +72,27 @@ export const obtenerDetalleCarrito = async (carritoId: string): Promise<CartItem
 
   if (error) {
     console.error('[cartService] Error al obtener detalle del carrito:', error);
-    throw error;
+    throw new Error(`Error al obtener detalle del carrito: ${error.message}`);
   }
 
-  return (data as unknown as CartItem[]) || [];
+  if (!data) {
+    return [];
+  }
+
+  return data.map((item) => {
+    const rawProducto = item.producto;
+    const producto: Producto | undefined = Array.isArray(rawProducto)
+      ? (rawProducto[0] as Producto | undefined)
+      : ((rawProducto as Producto | null) ?? undefined);
+
+    return {
+      id: item.id,
+      carrito_id: item.carrito_id,
+      producto_id: item.producto_id,
+      cantidad: item.cantidad,
+      producto,
+    };
+  });
 };
 
 // ── 3. Agregar Producto al Carrito ──────────────────────────────────────────
@@ -88,7 +110,7 @@ export const agregarProductoAlCarrito = async (
 
   if (errorConsulta) {
     console.error('[cartService] Error al consultar detalle existente:', errorConsulta);
-    throw errorConsulta;
+    throw new Error(`Error al consultar detalle del carrito: ${errorConsulta.message}`);
   }
 
   if (detalleExistente) {
@@ -97,7 +119,10 @@ export const agregarProductoAlCarrito = async (
       .update({ cantidad: detalleExistente.cantidad + cantidad })
       .eq('id', detalleExistente.id);
 
-    if (errorActualizacion) throw errorActualizacion;
+    if (errorActualizacion) {
+      console.error('[cartService] Error al actualizar cantidad del item:', errorActualizacion);
+      throw new Error(`Error al actualizar cantidad del producto: ${errorActualizacion.message}`);
+    }
   } else {
     const { error: errorInsercion } = await supabase
       .from('detalle_carrito')
@@ -109,7 +134,10 @@ export const agregarProductoAlCarrito = async (
         },
       ]);
 
-    if (errorInsercion) throw errorInsercion;
+    if (errorInsercion) {
+      console.error('[cartService] Error al insertar producto en carrito:', errorInsercion);
+      throw new Error(`Error al insertar producto en el carrito: ${errorInsercion.message}`);
+    }
   }
 };
 
@@ -125,7 +153,7 @@ export const actualizarCantidadEnCarrito = async (
 
   if (error) {
     console.error('[cartService] Error al actualizar cantidad:', error);
-    throw error;
+    throw new Error(`Error al actualizar cantidad en el carrito: ${error.message}`);
   }
 };
 
@@ -138,7 +166,7 @@ export const eliminarProductoDelCarrito = async (detalleId: number): Promise<voi
 
   if (error) {
     console.error('[cartService] Error al eliminar producto:', error);
-    throw error;
+    throw new Error(`Error al eliminar producto del carrito: ${error.message}`);
   }
 };
 
@@ -151,6 +179,7 @@ export const vaciarCarrito = async (carritoId: string): Promise<void> => {
 
   if (error) {
     console.error('[cartService] Error al vaciar el carrito:', error);
-    throw error;
+    throw new Error(`Error al vaciar el carrito: ${error.message}`);
   }
 };
+

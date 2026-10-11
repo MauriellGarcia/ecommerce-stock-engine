@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ShoppingCart, Check, Loader2, AlertCircle, X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../auth';
 import { useCart, obtenerOCrearCarrito, agregarProductoAlCarrito } from '../../cart';
-import { supabase } from '../../../lib/supabaseClient';
-import type { Producto, RespuestaProcesarCompra } from '../../../types/database.types';
+import { useCompraDirecta } from '../hooks/useCompraDirecta';
+import type { Producto } from '../../../types/database.types';
 
 interface CatalogoProductosProps {
   productos: Producto[];
@@ -21,13 +21,22 @@ export function CatalogoProductos({ productos, cargando, onCompraExitosa }: Cata
   const [agregandoId, setAgregandoId] = useState<number | null>(null);
   const [exitoId, setExitoId] = useState<number | null>(null);
   
-  // Estados para Modal "Comprar Ahora" (Compra Directa)
-  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
-  const [cantidadDirecta, setCantidadDirecta] = useState<number>(1);
-  const [procesandoDirecto, setProcesandoDirecto] = useState<boolean>(false);
-  const [respuestaDirecta, setRespuestaDirecta] = useState<RespuestaProcesarCompra | null>(null);
-  
   const [errorMensaje, setErrorMensaje] = useState<string | null>(null);
+
+  // Hook para Modal "Comprar Ahora" (Compra Directa)
+  const {
+    productoSeleccionado,
+    cantidadDirecta,
+    setCantidadDirecta,
+    procesandoDirecto,
+    respuestaDirecta,
+    abrirModalCompraDirecta,
+    cerrarModal,
+    handleConfirmarCompraDirecta,
+  } = useCompraDirecta({
+    onCompraExitosa,
+    onError: setErrorMensaje,
+  });
 
   const formatPrecio = (precio: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -58,58 +67,6 @@ export function CatalogoProductos({ productos, cargando, onCompraExitosa }: Cata
       setErrorMensaje('No se pudo agregar el producto al carrito.');
     } finally {
       setAgregandoId(null);
-    }
-  };
-
-  // ── Accion 2: Comprar Ahora (Abrir Modal) ──────────────────────────────────
-  const abrirModalCompraDirecta = (producto: Producto) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    setProductoSeleccionado(producto);
-    setCantidadDirecta(1);
-    setRespuestaDirecta(null);
-    setErrorMensaje(null);
-  };
-
-  const cerrarModal = () => {
-    if (procesandoDirecto) return;
-    setProductoSeleccionado(null);
-    setCantidadDirecta(1);
-    setRespuestaDirecta(null);
-    setErrorMensaje(null);
-  };
-
-  const handleConfirmarCompraDirecta = async () => {
-    if (!productoSeleccionado || cantidadDirecta <= 0) return;
-
-    try {
-      setProcesandoDirecto(true);
-      setErrorMensaje(null);
-      setRespuestaDirecta(null);
-
-      // Pasar el ID del usuario autenticado si existe la sesión
-      const { data, error } = await supabase.rpc('procesar_compra_concurrente', {
-        p_producto_id: productoSeleccionado.id,
-        p_cantidad: cantidadDirecta,
-        p_usuario_id: user ? user.id : null,
-      });
-
-      if (error) throw error;
-
-      const res = data as RespuestaProcesarCompra;
-      setRespuestaDirecta(res);
-
-      if (res.exito && onCompraExitosa) {
-        onCompraExitosa();
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Ocurrió un error inesperado al procesar la compra.';
-      setErrorMensaje(msg);
-      console.error('[CatalogoProductos] Error en RPC procesar_compra_concurrente:', err);
-    } finally {
-      setProcesandoDirecto(false);
     }
   };
 
