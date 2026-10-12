@@ -215,46 +215,58 @@ export function PanelQA({
 
     const tiempoFin = performance.now();
 
-    // 2. Conteo explícito
-    let procesadas = 0;
-    let sinStock = 0;
-    let errores = 0;
-
-    const detalles: DetallePeticion[] = resultados.map((raw, index) => {
-      let res = raw as RespuestaProcesarCompra | null;
-      if (typeof res === 'string') {
-        try {
-          res = JSON.parse(res);
-        } catch {
-          res = null;
+    // 2. Conteo explícito usando reduce para mayor precisión
+    const summary = resultados.reduce(
+      (acc, raw) => {
+        let res = raw as RespuestaProcesarCompra | null;
+        if (typeof res === 'string') {
+          try {
+            res = JSON.parse(res);
+          } catch {
+            res = null;
+          }
+        } else if (Array.isArray(res) && res.length > 0) {
+          res = res[0];
         }
-      } else if (Array.isArray(res) && res.length > 0) {
-        res = res[0];
-      }
 
-      if (res?.exito === true || res?.estado === 'PROCESADA') {
-        procesadas++;
-        return {
-          index: index + 1,
-          status: 'PROCESADA',
-          mensaje: res?.mensaje || 'Compra procesada exitosamente',
-        };
-      } else if (res?.exito === false || res?.estado === 'RECHAZADA_SIN_STOCK') {
-        sinStock++;
-        return {
-          index: index + 1,
-          status: 'RECHAZADA_SIN_STOCK',
-          mensaje: res?.mensaje || 'Rechazada por falta de stock',
-        };
-      } else {
-        errores++;
-        return {
-          index: index + 1,
+        const detalle: DetallePeticion = {
+          index: acc.nextIndex++,
           status: 'ERROR',
           mensaje: 'Error en la petición o sin respuesta',
         };
+
+        if (res?.exito === true || res?.estado === 'PROCESADA') {
+          acc.procesadas++;
+          detalle.status = 'PROCESADA';
+          detalle.mensaje = res?.mensaje || 'Compra procesada exitosamente';
+        } else if (res?.exito === false || res?.estado === 'RECHAZADA_SIN_STOCK') {
+          acc.sinStock++;
+          detalle.status = 'RECHAZADA_SIN_STOCK';
+          detalle.mensaje = res?.mensaje || 'Rechazada por falta de stock';
+        } else {
+          acc.errores++;
+        }
+
+        acc.detalles.push(detalle);
+        return acc;
+      },
+      {
+        procesadas: 0,
+        sinStock: 0,
+        errores: 0,
+        nextIndex: 1,
+        detalles: [] as DetallePeticion[],
       }
-    });
+    );
+
+    const { procesadas, sinStock, errores, detalles } = summary;
+
+    // Validar integridad de los resultados
+    if (detalles.length !== totalPeticiones) {
+      console.warn(
+        `[PanelQA] Discrepancia en el número de peticiones: esperado ${totalPeticiones}, recibido ${detalles.length}`
+      );
+    }
 
     setResultado({
       totalPeticiones,
